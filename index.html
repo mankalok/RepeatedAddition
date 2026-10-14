@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>幼兒/低年級數學：繽紛多行表與乘數概念樂園</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Noto+Sans+TC:wght@700;900&display=swap');
+
+    * { box-sizing: border-box; touch-action: manipulation; user-select: none; margin: 0; padding: 0; }
+
+    body {
+      background: linear-gradient(135deg, #fef08a 0%, #bae6fd 50%, #fbcfe8 100%);
+      font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      padding: 10px;
+    }
+
+    .app-container {
+      width: 100%; max-width: 980px;
+      background: #ffffff;
+      border-radius: 24px;
+      border: 4px solid #f43f5e;
+      box-shadow: 0 12px 35px rgba(244, 63, 94, 0.25);
+      padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #fff1f2; padding: 12px 18px; border-radius: 16px;
+      border: 3px solid #fecdd3;
+    }
+
+    .title { font-size: 1.25rem; font-weight: 900; color: #e11d48; display: flex; align-items: center; gap: 8px; }
+
+    /* 表格選擇器按鈕區 (繽紛按鈕) */
+    .controls-card {
+      background: #f0f9ff; padding: 14px; border-radius: 18px;
+      border: 3px solid #bae6fd;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .btn-group { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+
+    .selector-btn {
+      padding: 8px 14px; border-radius: 12px; border: 3px solid #93c5fd;
+      background: #ffffff; color: #1e3a8a; font-weight: 900; font-size: 0.95rem;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .selector-btn.active {
+      background: #3b82f6; color: white; border-color: #1d4ed8;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); transform: scale(1.05);
+    }
+
+    /* 乘數倍數控制器與模式切換 */
+    .control-row {
+      display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    }
+
+    .multiplier-bar {
+      flex: 2; min-width: 280px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: #fffbebf0; padding: 10px 18px; border-radius: 16px;
+      border: 3px solid #fde047;
+    }
+
+    .step-btn {
+      width: 44px; height: 44px; border-radius: 12px; border: none;
+      background: #f59e0b; color: #ffffff; font-size: 1.6rem; font-weight: 900;
+      cursor: pointer; box-shadow: 0 4px 0 #b45309; transition: 0.1s;
+    }
+    .step-btn:active { transform: translateY(2px); box-shadow: none; }
+
+    .multiplier-val { font-size: 1.15rem; font-weight: 900; color: #b45309; }
+
+    .icon-toggle-btn {
+      padding: 10px 16px; border-radius: 16px; border: 3px solid #a855f7;
+      background: #f3e8ff; color: #6b21a8; font-weight: 900; font-size: 0.95rem;
+      cursor: pointer; transition: 0.2s;
+    }
+    .icon-toggle-btn.active {
+      background: #a855f7; color: white;
+    }
+
+    /* 主網格多表平行顯示區域 */
+    .tables-stage {
+      display: flex; gap: 14px; width: 100%; overflow-x: auto; padding-bottom: 10px;
+      justify-content: flex-start; align-items: stretch;
+    }
+
+    /* 個別表格容器 */
+    .table-column {
+      flex: 0 0 auto;
+      background: #ffffff; border: 3px solid #cbd5e1; border-radius: 20px;
+      padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+      max-height: 520px; overflow-y: auto; box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+    }
+
+    .table-title {
+      font-size: 1rem; font-weight: 900; padding: 8px 14px; border-radius: 12px;
+      width: 100%; text-align: center; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    /* 動態網格容器：所有格仔統一大小 (Fixed size per cell: 32px) */
+    .grid-board {
+      display: grid; gap: 5px; justify-content: center;
+    }
+
+    /* 所有表格內的格仔保持統一大小與卡通風格 */
+    .grid-cell {
+      width: 32px; height: 32px;
+      border-radius: 8px; background: #f1f5f9;
+      border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 0.85rem; color: #64748b; cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .grid-cell:hover { transform: scale(1.15); z-index: 5; }
+
+    /* 亮燈高亮狀態 */
+    .grid-cell.highlight {
+      background: #fbbf24; color: #78350f; font-size: 0.9rem;
+      border-color: #f59e0b; box-shadow: 0 4px 8px rgba(245, 158, 11, 0.4);
+    }
+    
+    /* 每行最後一個（倍數目標）亮綠色 */
+    .grid-cell.is-target {
+      background: #4ade80 !important; color: #064e3b !important;
+      border-color: #22c55e !important; box-shadow: 0 4px 10px rgba(34, 197, 94, 0.5) !important;
+    }
+
+    /* 點擊聚焦強調狀態（Focus Highlight） */
+    .grid-cell.user-selected {
+      background: #ec4899 !important; color: #ffffff !important;
+      border-color: #be185d !important;
+      animation: pulse 0.8s infinite alternate;
+      z-index: 10; transform: scale(1.25);
+      box-shadow: 0 0 15px rgba(236, 72, 153, 0.8) !important;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1.15); }
+      100% { transform: scale(1.3); }
+    }
+
+    /* 算式總結列 */
+    .formula-box {
+      background: #f8fafc; padding: 10px; border-radius: 12px;
+      font-weight: 900; font-size: 0.9rem; text-align: center; color: #1e293b; width: 100%;
+      border: 2px solid #e2e8f0; margin-top: auto; line-height: 1.4;
+    }
+
+    /* 底部聚焦提示標籤 */
+    .focus-tip {
+      background: #fce7f3; color: #be185d; padding: 8px 16px; border-radius: 12px;
+      border: 2px solid #fbcfe8; font-weight: 900; font-size: 0.95rem; text-align: center;
+    }
+
+    /* 自訂滾動條樣式 */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- 頂部標題列 -->
+  <div class="header">
+    <div class="title">🐱 乘數概念與多行表對比樂園 🐰</div>
+    <div style="font-size: 0.9rem; font-weight: bold; color: #e11d48;">幼兒/低年級色彩版</div>
+  </div>
+
+  <!-- 模式與表格選擇區 (2 至 10 行表全齊) -->
+  <div class="controls-card">
+    <div style="font-size: 0.9rem; font-weight: bold; color: #1d4ed8;">📌 請點選要顯示的行表（可多選 1~3 個）：</div>
+    <div class="btn-group">
+      <button class="selector-btn active" data-row="2" onclick="toggleTable(2)">2行表 🐶</button>
+      <button class="selector-btn" data-row="3" onclick="toggleTable(3)">3行表 🐱</button>
+      <button class="selector-btn" data-row="4" onclick="toggleTable(4)">4行表 🐰</button>
+      <button class="selector-btn active" data-row="5" onclick="toggleTable(5)">5行表 🐼</button>
+      <button class="selector-btn" data-row="6" onclick="toggleTable(6)">6行表 🦊</button>
+      <button class="selector-btn" data-row="7" onclick="toggleTable(7)">7行表 🐸</button>
+      <button class="selector-btn" data-row="8" onclick="toggleTable(8)">8行表 🦁</button>
+      <button class="selector-btn" data-row="9" onclick="toggleTable(9)">9行表 🦄</button>
+      <button class="selector-btn active" data-row="10" onclick="toggleTable(10)">10行表 🐥</button>
+    </div>
+  </div>
+
+  <!-- 控制列：組數調整 + 顯示模式切換 -->
+  <div class="control-row">
+    <div class="multiplier-bar">
+      <button class="step-btn" onclick="changeCount(-1)">-</button>
+      <div class="multiplier-val">目前顯示：第 <span id="count-display" style="font-size: 1.6rem; color: #eab308;">3</span> 排（倍數）</div>
+      <button class="step-btn" onclick="changeCount(1)">+</button>
+    </div>
+
+    <button class="icon-toggle-btn" id="mode-btn" onclick="toggleIconMode()">🍎 切換為圖案模式</button>
+  </div>
+
+  <!-- 聚焦提示說明列 -->
+  <div class="focus-tip" id="focus-tip">
+    👉 <b>小提示：</b>點擊下方的任何一個數字格仔，可以重點關注該數字在不同表格中的位置喔！
+  </div>
+
+  <!-- 主對比舞台（動態渲染多個欄位） -->
+  <div class="tables-stage" id="tables-stage">
+    <!-- 程式動態生成各個行表 -->
+  </div>
+</div>
+
+<script>
+  let activeTables = [2, 5, 10]; 
+  let currentGroupCount = 3;      
+  let selectedNumber = null;     // 儲存用戶點擊關注的數字
+  let showIcons = false;         // 是否顯示圖案模式
+  const minMaxNumber = 30;        
+
+  // 動物圖案對應
+  const tableIcons = {
+    2: '🐶', 3: '🐱', 4: '🐰', 5: '🐼', 6: '🦊', 7: '🐸', 8: '🦁', 9: '🦄', 10: '🐥'
+  };
+
+  // 繽紛色彩對應
+  const themeColors = {
+    2: '#3b82f6', 3: '#a855f7', 4: '#f43f5e', 5: '#f59e0b', 
+    6: '#10b981', 7: '#06b6d4', 8: '#8b5cf6', 9: '#ec4899', 10: '#22c55e'
+  };
+
+  // 豐富音效系統 (Web Audio API)
+  let audioCtx = null;
+  function playSound(freq = 523.25, type = 'sine') {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+    osc.type = type; osc.frequency.setValueAtTime(freq, now);
+    gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+    osc.start(now); osc.stop(now + 0.12);
+  }
+
+  function toggleTable(rowNum) {
+    playSound(600, 'triangle');
+    const index = activeTables.indexOf(rowNum);
+    if (index > -1) {
+      if (activeTables.length === 1) {
+        alert("請至少保留一個表格進行觀察喔！");
+        return;
+      }
+      activeTables.splice(index, 1);
+    } else {
+      if (activeTables.length >= 3) {
+        alert("最多同時顯示 3 個表格，以便清晰觀察！");
+        return;
+      }
+      activeTables.push(rowNum);
+    }
+    
+    activeTables.sort((a, b) => a - b);
+
+    // 更新按鈕樣式
+    document.querySelectorAll('.selector-btn').forEach(btn => {
+      const r = parseInt(btn.dataset.row);
+      if (activeTables.includes(r)) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+
+    renderTables();
+  }
+
+  function changeCount(delta) {
+    playSound(delta > 0 ? 700 : 400, 'sine');
+    currentGroupCount = Math.max(1, Math.min(10, currentGroupCount + delta));
+    document.getElementById('count-display').innerText = currentGroupCount;
+    renderTables();
+  }
+
+  function toggleIconMode() {
+    playSound(800, 'sine');
+    showIcons = !showIcons;
+    const btn = document.getElementById('mode-btn');
+    btn.innerText = showIcons ? "🔢 切換為數字模式" : "🍎 切換為圖案模式";
+    if (showIcons) btn.classList.add('active');
+    else btn.classList.remove('active');
+    renderTables();
+  }
+
+  // 點擊格仔聚焦功能
+  function selectCellNumber(num) {
+    playSound(900, 'sine');
+    if (selectedNumber === num) {
+      selectedNumber = null; // 再點一次取消聚焦
+      document.getElementById('focus-tip').innerHTML = `👉 <b>小提示：</b>點擊下方的任何一個數字格仔，可以重點關注該數字在不同表格中的位置喔！`;
+    } else {
+      selectedNumber = num;
+      document.getElementById('focus-tip').innerHTML = `📍 正在重點關注數字 <b><span style="font-size:1.2rem; color:#e11d48;">${num}</span></b>！看看它在各個表格中的位置有什麼不同？`;
+    }
+    renderTables();
+  }
+
+  function renderTables() {
+    const stage = document.getElementById('tables-stage');
+    stage.innerHTML = '';
+
+    activeTables.forEach(rowCols => {
+      const colDiv = document.createElement('div');
+      colDiv.className = 'table-column';
+
+      const themeColor = themeColors[rowCols] || '#3b82f6';
+      const animalIcon = tableIcons[rowCols] || '⭐️';
+
+      // 標題與網格佈局
+      colDiv.innerHTML = `
+        <div class="table-title" style="background: ${themeColor}18; color: ${themeColor}; border: 2px solid ${themeColor};">
+          ${animalIcon} ${rowCols} 行表（每行 ${rowCols} 個）
+        </div>
+        <div class="grid-board" id="grid-${rowCols}" style="grid-template-columns: repeat(${rowCols}, 32px);"></div>
+        <div class="formula-box" id="formula-${rowCols}"></div>
+      `;
+
+      stage.appendChild(colDiv);
+
+      const gridBoard = colDiv.querySelector(`#grid-${rowCols}`);
+      const targetMax = rowCols * currentGroupCount;
+      const totalCellsToRender = Math.max(minMaxNumber, targetMax);
+
+      for (let i = 1; i <= totalCellsToRender; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'grid-cell';
+
+        // 決定顯示數字還是公仔
+        if (showIcons) {
+          cell.innerText = (i <= targetMax) ? animalIcon : '▪️';
+          cell.style.fontSize = '0.75rem';
+        } else {
+          cell.innerText = i;
+        }
+
+        // 判斷倍數涵蓋範圍與目標格
+        if (i <= targetMax) {
+          cell.classList.add('highlight');
+          if (i % rowCols === 0) {
+            cell.classList.add('is-target');
+          }
+        }
+
+        // 點擊聚焦強調
+        if (selectedNumber === i) {
+          cell.classList.add('user-selected');
+          cell.innerText = `📍${i}`;
+        }
+
+        // 綁定點擊事件
+        cell.onclick = () => selectCellNumber(i);
+
+        gridBoard.appendChild(cell);
+      }
+
+      // 更新下方算式說明
+      const formulaBox = colDiv.querySelector(`#formula-${rowCols}`);
+      formulaBox.innerHTML = `<span style="color:${themeColor}; font-size:1.1rem;">${rowCols} × ${currentGroupCount} = ${targetMax}</span><br><span style="font-size:0.8rem; color:#64748b;">(${rowCols} 的 ${currentGroupCount} 倍是 ${targetMax})</span>`;
+    });
+  }
+
+  window.onload = function() {
+    renderTables();
+  };
+</script>
+
+</body>
+</html>
