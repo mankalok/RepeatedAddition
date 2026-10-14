@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>計算機鍵盤上的 3 與 7 乘法神秘規律</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Noto+Sans+TC:wght@600;800;900&display=swap');
+
+        * { box-sizing: border-box; touch-action: manipulation; user-select: none; }
+
+        body {
+            font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #fef08a 0%, #bae6fd 50%, #fbcfe8 100%);
+            min-height: 100vh;
+        }
+
+        /* 鍵盤按鈕樣式 */
+        .numpad-btn {
+            position: relative;
+            border-radius: 18px;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 6px 0 #cbd5e1;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 95px;
+            background: #ffffff;
+            color: #1e293b;
+            border: 3px solid #e2e8f0;
+            padding: 6px;
+        }
+
+        .numpad-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #cbd5e1;
+        }
+
+        /* 高亮選中的按鈕 */
+        .numpad-btn.active-step {
+            background: #fde047 !important;
+            border-color: #eab308 !important;
+            color: #854d0e !important;
+            transform: scale(1.08) translateY(-2px);
+            box-shadow: 0 8px 20px rgba(234, 179, 8, 0.5);
+            z-index: 10;
+        }
+
+        /* 十位標籤樣式 (移至左上角，改為「寫X」，不遮擋數字) */
+        .tens-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            font-size: 0.65rem;
+            font-weight: 900;
+            padding: 1px 5px;
+            border-radius: 6px;
+            background: #ef4444;
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.25);
+            z-index: 2;
+        }
+
+        /* 醒目十位數字（寫進去不同顏色的字體） */
+        .added-tens-num {
+            color: #ef4444;
+            font-weight: 900;
+            background: #fee2e2;
+            padding: 0 4px;
+            border-radius: 6px;
+            margin-right: 2px;
+            border: 1px solid #fca5a5;
+        }
+
+        .numpad-btn.active-step .added-tens-num {
+            color: #ffffff;
+            background: #dc2626;
+            border-color: #b91c1c;
+        }
+
+        /* 陣列積木 */
+        .array-row { display: flex; gap: 4px; margin-bottom: 4px; }
+        .array-block {
+            width: 22px; height: 22px; border-radius: 5px;
+            background: #e2e8f0; transition: all 0.2s ease; border: 1px solid #cbd5e1;
+        }
+        .array-block.active-3 {
+            background: #3b82f6; border-color: #1d4ed8;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.5); transform: scale(1.05);
+        }
+        .array-block.active-7 {
+            background: #ec4899; border-color: #be185d;
+            box-shadow: 0 0 8px rgba(236, 72, 153, 0.5); transform: scale(1.05);
+        }
+
+        .tab-btn { transition: all 0.2s ease; }
+        .tab-btn.active {
+            background: #3b82f6; color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-4 md:p-6 flex justify-center items-center">
+
+<div class="w-full max-w-5xl bg-white/95 backdrop-blur border-4 border-amber-400 rounded-3xl shadow-2xl p-3 sm:p-6 flex flex-col gap-4 relative overflow-hidden">
+    
+    <!-- 頂部標題與頁籤 -->
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-3 bg-amber-50 p-3 sm:p-4 rounded-2xl border-2 border-amber-200">
+        <div class="flex items-center gap-3">
+            <span class="text-3xl sm:text-4xl">📱</span>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black text-amber-900 leading-tight">計算機鍵盤上的 3 與 7 乘法神秘規律</h1>
+                <p class="text-xs sm:text-sm text-amber-700 font-semibold">看懂鍵盤上的「十位寫法」，秒記乘法口訣！</p>
+            </div>
+        </div>
+        
+        <!-- 頁籤切換 -->
+        <div class="flex bg-amber-200/60 p-1.5 rounded-xl border border-amber-300 w-full sm:w-auto">
+            <button id="nav-explore" onclick="switchNav('explore')" class="tab-btn active flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-sm sm:text-base">
+                🔍 探索解密模式
+            </button>
+            <button id="nav-game" onclick="switchNav('game')" class="tab-btn flex-1 sm:flex-none px-4 py-2 rounded-lg font-bold text-sm sm:text-base text-amber-900">
+                🎮 乘法速算大挑戰
+            </button>
+        </div>
+    </div>
+
+    <!-- =================================================== -->
+    <!-- 區域 1: 探索解密模式                               -->
+    <!-- =================================================== -->
+    <div id="section-explore" class="flex flex-col gap-4">
+        
+        <!-- 控制按鈕區 -->
+        <div class="flex flex-wrap justify-between items-center gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+            <div class="flex gap-2 w-full sm:w-auto">
+                <button id="btn-mode-3" onclick="selectMultiplier(3)" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black text-base sm:text-lg border-2 border-blue-400 bg-blue-500 text-white shadow-md transition">
+                    3 的乘法密碼 ⚡
+                </button>
+                <button id="btn-mode-7" onclick="selectMultiplier(7)" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black text-base sm:text-lg border-2 border-pink-300 bg-white text-pink-600 shadow-sm transition">
+                    7 的乘法密碼 🌟
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button id="btn-autoplay" onclick="toggleAutoPlay()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow-md transition">
+                    <span id="autoplay-icon">▶️</span> <span id="autoplay-text">自動演示</span>
+                </button>
+                <button onclick="resetExploration()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold text-sm shadow-sm transition">
+                    🔄 重設
+                </button>
+            </div>
+        </div>
+
+        <!-- 主解密區域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- 左側：融合十位規律的 3x3 鍵盤 -->
+            <div class="lg:col-span-5 bg-gradient-to-b from-slate-100 to-slate-50 p-4 rounded-3xl border-2 border-slate-200 flex flex-col items-center">
+                
+                <div class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1">
+                    <span>📱 計算機鍵盤（紅色數字為前面寫上的十位數）</span>
+                </div>
+
+                <!-- 3x3 鍵盤矩陣 -->
+                <div class="grid grid-cols-3 gap-3 w-full max-w-[280px]" id="numpad-container">
+                    <!-- JavaScript 動態生成 789, 456, 123 鍵盤 -->
+                </div>
+
+                <!-- 乘數快捷選擇條 (1x ~ 9x) -->
+                <div class="w-full mt-4 pt-3 border-t border-slate-200">
+                    <div class="text-xs font-bold text-slate-500 mb-2 text-center">乘數選擇：</div>
+                    <div class="grid grid-cols-5 gap-1.5" id="step-pills-container">
+                        <!-- 動態生成 1x-9x 按鈕 -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 右側：當前算式 + 規律解密說明 + 實物積木陣列 -->
+            <div class="lg:col-span-7 flex flex-col gap-4">
+                
+                <!-- 當前算式卡片 -->
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-2xl shadow-lg border-2 border-blue-400 flex justify-between items-center">
+                    <div>
+                        <div class="text-xs text-blue-200 font-bold uppercase tracking-wider">目前算式：</div>
+                        <div class="text-3xl sm:text-4xl font-black" id="active-equation-text">3 × 1 = 3</div>
+                    </div>
+                    <div class="text-right bg-white/10 backdrop-blur px-3 py-2 rounded-xl border border-white/20">
+                        <div class="text-xs text-blue-200 font-semibold">十位 + 個位</div>
+                        <div class="text-xl sm:text-2xl font-black text-amber-300" id="active-breakdown-text">3</div>
+                    </div>
+                </div>
+
+                <!-- 解密說明 -->
+                <div class="bg-amber-100/70 border-2 border-amber-300 p-3 rounded-2xl text-xs sm:text-sm text-amber-900 font-bold leading-relaxed" id="rule-tip-box">
+                    💡 <b>秘密提示：</b>看看鍵盤上的數字！前面紅色的數字是寫上去的十位數，這樣就能直接組成乘法答案囉！
+                </div>
+
+                <!-- 實物積木陣列對照 -->
+                <div class="bg-amber-50/70 border-2 border-amber-200 p-4 rounded-2xl flex flex-col gap-2">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">🧱</span>
+                            <span class="text-sm font-black text-amber-900" id="array-title">積木陣列對照（3 行表）</span>
+                        </div>
+                        <span class="text-xs font-bold text-amber-700 bg-amber-200/80 px-2.5 py-1 rounded-lg" id="array-count-badge">共 3 個方塊</span>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-xl border border-amber-200 min-h-[120px] max-h-[180px] overflow-y-auto flex flex-col justify-start items-start" id="array-grid-wrapper">
+                        <!-- 積木動態生成 -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- =================================================== -->
+    <!-- 區域 2: 乘法速算闖關遊戲                            -->
+    <!-- =================================================== -->
+    <div id="section-game" class="hidden flex-col gap-4">
+        
+        <div class="flex justify-between items-center bg-rose-50 p-3 sm:p-4 rounded-2xl border-2 border-rose-200">
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-black text-rose-900">關卡：<span id="game-q-idx" class="text-rose-600 text-lg">1</span>/10</span>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="text-sm font-black text-slate-700">得分：<span id="game-score" class="text-amber-600 text-xl font-black">0</span></div>
+                <div class="text-base" id="game-lives">❤️❤️❤️</div>
+            </div>
+        </div>
+
+        <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden border border-slate-300">
+            <div id="game-timer-fill" class="bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 h-full w-full transition-all duration-100 ease-linear"></div>
+        </div>
+
+        <!-- 題目卡片 -->
+        <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-3xl border-4 border-indigo-400 shadow-xl flex flex-col items-center justify-center min-h-[160px] text-center relative overflow-hidden">
+            <div class="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-1">🎯 鍵盤乘法速算</div>
+            <div class="text-3xl sm:text-5xl font-black my-2" id="q-prompt-text">3 × 7 = ?</div>
+            <div class="text-sm text-indigo-200 font-semibold">請利用鍵盤上的密碼快速選出答案！</div>
+        </div>
+
+        <!-- 四選一答案選項 -->
+        <div class="grid grid-cols-2 gap-3" id="game-options-container">
+            <!-- 答案按鈕由 JS 生成 -->
+        </div>
+
+    </div>
+
+    <!-- 結算彈窗 (對接 Google 試算表) -->
+    <div id="gameover-modal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full border-4 border-amber-400 shadow-2xl text-center flex flex-col gap-4">
+            <div class="text-5xl">🏆</div>
+            <h2 class="text-2xl font-black text-slate-800" id="modal-title">挑戰完成！</h2>
+            <div class="text-4xl font-black text-amber-500" id="modal-final-score">0 分</div>
+            
+            <div id="upload-status" class="text-xs font-bold text-blue-600 bg-blue-50 p-2 rounded-xl border border-blue-200">
+                正在紀錄分數...
+            </div>
+
+            <button onclick="restartGame()" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg rounded-2xl shadow-lg transition">
+                再玩一次 🚀
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const GAME_NAME = "鍵盤 3 同 7 乘法密碼特訓";
+
+    // 音效系統
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+        if (!audioCtx) audioCtx = new AudioContext();
+    }
+
+    function playSound(type) {
+        initAudio();
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'tap') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+            osc.start(now); osc.stop(now + 0.05);
+        } else if (type === 'correct') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.setValueAtTime(659.25, now + 0.08);
+            osc.frequency.setValueAtTime(783.99, now + 0.16);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+            osc.start(now); osc.stop(now + 0.35);
+        } else if (type === 'wrong') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(180, now);
+            osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+            osc.start(now); osc.stop(now + 0.25);
+        }
+    }
+
+    // 核心數據資料
+    let currentMultiplier = 3; 
+    let currentStep = 1; 
+    let isAutoPlaying = false;
+    let autoPlayInterval = null;
+
+    // 標準 3x3 鍵盤
+    const numpadLayout = [
+        [7, 8, 9],
+        [4, 5, 6],
+        [1, 2, 3]
+    ];
+
+    // 3 同 7 乘法的鍵盤走位與十位寫法規則
+    const rules = {
+        3: {
+            title: "3 的乘法密碼",
+            sequence: [3, 6, 9, 2, 5, 8, 1, 4, 7],
+            tensMap: {
+                3: { tens: 0, step: 1 }, 6: { tens: 0, step: 2 }, 9: { tens: 0, step: 3 },
+                2: { tens: 1, step: 4 }, 5: { tens: 1, step: 5 }, 8: { tens: 1, step: 6 },
+                1: { tens: 2, step: 7 }, 4: { tens: 2, step: 8 }, 7: { tens: 2, step: 9 }
+            },
+            tip: "💡 <b>3 的密碼：</b> (3,6,9) 前面不寫數 ➔ (2,5,8) 前面寫上紅色 <span style='color:#ef4444;font-size:1.1rem;'>1</span> ➔ (1,4,7) 前面寫上紅色 <span style='color:#ef4444;font-size:1.1rem;'>2</span>！"
+        },
+        7: {
+            title: "7 的乘法密碼",
+            sequence: [7, 4, 1, 8, 5, 2, 9, 6, 3],
+            tensMap: {
+                7: { tens: 0, step: 1 }, 4: { tens: 1, step: 2 }, 1: { tens: 2, step: 3 },
+                8: { tens: 2, step: 4 }, 5: { tens: 3, step: 5 }, 2: { tens: 4, step: 6 },
+                9: { tens: 4, step: 7 }, 6: { tens: 5, step: 8 }, 3: { tens: 6, step: 9 }
+            },
+            tip: "🌟 <b>7 的密碼：</b> (7,4,1) 前面寫 0,1,2 ➔ (8,5,2) 前面寫 2,3,4 ➔ (9,6,3) 前面寫 4,5,6！"
+        }
+    };
+
+    window.onload = function() {
+        renderNumpad();
+        renderStepPills();
+        updateDisplay();
+    };
+
+    function switchNav(mode) {
+        playSound('tap');
+        document.getElementById('nav-explore').classList.toggle('active', mode === 'explore');
+        document.getElementById('nav-game').classList.toggle('active', mode === 'game');
+        
+        document.getElementById('section-explore').classList.toggle('hidden', mode !== 'explore');
+        document.getElementById('section-game').classList.toggle('hidden', mode !== 'game');
+
+        if (mode === 'game') {
+            stopAutoPlay();
+            initGame();
+        }
+    }
+
+    function selectMultiplier(num) {
+        playSound('tap');
+        currentMultiplier = num;
+        currentStep = 1;
+
+        const btn3 = document.getElementById('btn-mode-3');
+        const btn7 = document.getElementById('btn-mode-7');
+        if (num === 3) {
+            btn3.className = "flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black text-base sm:text-lg border-2 border-blue-400 bg-blue-500 text-white shadow-md transition";
+            btn7.className = "flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black text-base sm:text-lg border-2 border-pink-300 bg-white text-pink-600 shadow-sm transition";
+        } else {
+            btn7.className = "flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black text-base sm:text-lg border-2 border-pink-400 bg-pink-500 text-white shadow-md transition";
+            btn3.className = "flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-black text-base sm:text-lg border-2 border-blue-300 bg-white text-blue-600 shadow-sm transition";
+        }
+
+        document.getElementById('rule-tip-box').innerHTML = rules[currentMultiplier].tip;
+        renderNumpad();
+        updateDisplay();
+    }
+
+    // 渲染鍵盤，將「加X」改為「寫X」，並移至「左上角」，確保絕不遮住數字
+    function renderNumpad() {
+        const container = document.getElementById('numpad-container');
+        container.innerHTML = '';
+
+        const currentTensMap = rules[currentMultiplier].tensMap;
+
+        numpadLayout.forEach(row => {
+            row.forEach(num => {
+                const btn = document.createElement('button');
+                btn.className = 'numpad-btn';
+                btn.id = `btn-num-${num}`;
+                btn.onclick = () => handleNumClick(num);
+
+                const tensInfo = currentTensMap[num];
+                const tensAdd = tensInfo ? tensInfo.tens : 0;
+
+                // 只有當 tensAdd > 0 時才顯示「左上角」寫數徽章
+                const badgeHTML = tensAdd > 0 ? `<span class="tens-badge">寫 ${tensAdd}</span>` : '';
+
+                btn.innerHTML = `
+                    ${badgeHTML}
+                    <div class="flex items-center justify-center text-3xl font-black text-slate-800 mt-2" id="num-box-${num}">
+                        <span id="tens-display-${num}"></span>
+                        <span id="units-display-${num}">${num}</span>
+                    </div>
+                    <span class="text-[0.65rem] font-bold text-slate-400 mt-1" id="sub-product-${num}">
+                        ${tensAdd > 0 ? '十位寫 ' + tensAdd : '保持個位'}
+                    </span>
+                `;
+
+                container.appendChild(btn);
+            });
+        });
+    }
+
+    function renderStepPills() {
+        const container = document.getElementById('step-pills-container');
+        container.innerHTML = '';
+        for (let i = 1; i <= 9; i++) {
+            const btn = document.createElement('button');
+            btn.className = `py-1.5 text-xs font-black rounded-lg border transition ${i === currentStep ? 'bg-amber-400 text-amber-950 border-amber-500 shadow-sm' : 'bg-white text-slate-700 border-slate-200'}`;
+            btn.innerText = `${i}x`;
+            btn.onclick = () => {
+                playSound('tap');
+                currentStep = i;
+                updateDisplay();
+            };
+            container.appendChild(btn);
+        }
+    }
+
+    function updateDisplay() {
+        const total = currentMultiplier * currentStep;
+        const tens = Math.floor(total / 10);
+        const units = total % 10;
+
+        // 1. 更新算式標題
+        document.getElementById('active-equation-text').innerText = `${currentMultiplier} × ${currentStep} = ${total}`;
+        
+        if (tens > 0) {
+            document.getElementById('active-breakdown-text').innerText = `${tens}0 + ${units} = ${total}`;
+        } else {
+            document.getElementById('active-breakdown-text').innerText = `${units}`;
+        }
+
+        // 2. 更新鍵盤按鈕高亮與十位寫法
+        highlightKeypad(units, total, tens);
+
+        // 3. 更新 1x~9x 按鈕
+        renderStepPills();
+
+        // 4. 更新積木陣列
+        renderArrayBlocks(total);
+    }
+
+    function highlightKeypad(activeUnit, fullProduct, tensVal) {
+        const currentTensMap = rules[currentMultiplier].tensMap;
+
+        // 重置所有鍵盤按鈕
+        for (let i = 1; i <= 9; i++) {
+            const btn = document.getElementById(`btn-num-${i}`);
+            if (btn) {
+                btn.classList.remove('active-step');
+                document.getElementById(`tens-display-${i}`).innerHTML = '';
+                document.getElementById(`units-display-${i}`).innerText = i;
+            }
+        }
+
+        // 高亮當前對應的按鈕，用醒目顏色喺左邊加上十位數！
+        const activeBtn = document.getElementById(`btn-num-${activeUnit}`);
+        if (activeBtn) {
+            activeBtn.classList.add('active-step');
+            
+            // 如果有十位數，用帶有紅底醒目顏色的數字寫喺前面！
+            if (tensVal > 0) {
+                document.getElementById(`tens-display-${activeUnit}`).innerHTML = `<span class="added-tens-num">${tensVal}</span>`;
+            } else {
+                document.getElementById(`tens-display-${activeUnit}`).innerHTML = '';
+            }
+            document.getElementById(`units-display-${activeUnit}`).innerText = activeUnit;
+        }
+    }
+
+    function renderArrayBlocks(totalCount) {
+        const wrapper = document.getElementById('array-grid-wrapper');
+        const badge = document.getElementById('array-count-badge');
+        const title = document.getElementById('array-title');
+
+        wrapper.innerHTML = '';
+        badge.innerText = `共 ${totalCount} 個方塊`;
+        title.innerText = `積木陣列對照（${currentMultiplier} 行表）`;
+
+        const numRows = Math.ceil(totalCount / currentMultiplier);
+        let filled = 0;
+
+        for (let r = 0; r < numRows; r++) {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'array-row';
+
+            for (let c = 0; c < currentMultiplier; c++) {
+                if (filled < totalCount) {
+                    const block = document.createElement('div');
+                    block.className = `array-block ${currentMultiplier === 3 ? 'active-3' : 'active-7'}`;
+                    rowDiv.appendChild(block);
+                    filled++;
+                }
+            }
+            wrapper.appendChild(rowDiv);
+        }
+    }
+
+    function handleNumClick(num) {
+        playSound('tap');
+        const tensInfo = rules[currentMultiplier].tensMap[num];
+        if (tensInfo) {
+            currentStep = tensInfo.step;
+            updateDisplay();
+        }
+    }
+
+    function toggleAutoPlay() {
+        if (isAutoPlaying) {
+            stopAutoPlay();
+        } else {
+            startAutoPlay();
+        }
+    }
+
+    function startAutoPlay() {
+        isAutoPlaying = true;
+        document.getElementById('autoplay-icon').innerText = '⏸️';
+        document.getElementById('autoplay-text').innerText = '暫停';
+
+        autoPlayInterval = setInterval(() => {
+            currentStep++;
+            if (currentStep > 9) currentStep = 1;
+            updateDisplay();
+            playSound('tap');
+        }, 1300);
+    }
+
+    function stopAutoPlay() {
+        isAutoPlaying = false;
+        document.getElementById('autoplay-icon').innerText = '▶️';
+        document.getElementById('autoplay-text').innerText = '自動演示';
+        if (autoPlayInterval) clearInterval(autoPlayInterval);
+    }
+
+    function resetExploration() {
+        stopAutoPlay();
+        currentStep = 1;
+        updateDisplay();
+    }
+
+    // ===================================================
+    // 區域 3: 闖關遊戲邏輯
+    // ===================================================
+    let gameScore = 0;
+    let gameLives = 3;
+    let gameQIndex = 0;
+    const totalQuestions = 10;
+    let gameTimer = null;
+    let timeLeft = 10;
+    let currentCorrectAns = 0;
+    let secondsElapsed = 0;
+    let totalTimerInterval = null;
+
+    function initGame() {
+        gameScore = 0;
+        gameLives = 3;
+        gameQIndex = 0;
+        secondsElapsed = 0;
+
+        if (totalTimerInterval) clearInterval(totalTimerInterval);
+        totalTimerInterval = setInterval(() => secondsElapsed++, 1000);
+
+        updateGameUI();
+        nextQuestion();
+    }
+
+    function updateGameUI() {
+        document.getElementById('game-score').innerText = gameScore;
+        document.getElementById('game-q-idx').innerText = Math.min(gameQIndex + 1, totalQuestions);
+        document.getElementById('game-lives').innerText = '❤️'.repeat(Math.max(0, gameLives));
+    }
+
+    function nextQuestion() {
+        if (gameQIndex >= totalQuestions || gameLives <= 0) {
+            endGame();
+            return;
+        }
+
+        updateGameUI();
+
+        const mult = Math.random() < 0.5 ? 3 : 7;
+        const step = Math.floor(Math.random() * 9) + 1; // 1~9
+        currentCorrectAns = mult * step;
+
+        document.getElementById('q-prompt-text').innerText = `${mult} × ${step} = ?`;
+
+        renderGameOptions(currentCorrectAns);
+        startGameTimer();
+    }
+
+    function renderGameOptions(correctAns) {
+        const container = document.getElementById('game-options-container');
+        container.innerHTML = '';
+
+        let choices = new Set();
+        choices.add(correctAns);
+
+        while (choices.size < 4) {
+            let offset = (Math.floor(Math.random() * 4) + 1) * (Math.random() < 0.5 ? 1 : -1);
+            let dummy = correctAns + offset;
+            if (dummy > 0 && dummy <= 70) {
+                choices.add(dummy);
+            }
+        }
+
+        const choiceArray = Array.from(choices).sort(() => Math.random() - 0.5);
+
+        choiceArray.forEach(val => {
+            const btn = document.createElement('button');
+            btn.className = "py-4 font-black text-2xl bg-white border-4 border-slate-200 text-slate-800 rounded-2xl shadow-md hover:border-indigo-400 active:scale-95 transition";
+            btn.innerText = val;
+            btn.onclick = () => checkGameAnswer(val, btn);
+            container.appendChild(btn);
+        });
+    }
+
+    function startGameTimer() {
+        if (gameTimer) clearInterval(gameTimer);
+        timeLeft = 10;
+        const timerFill = document.getElementById('game-timer-fill');
+
+        gameTimer = setInterval(() => {
+            timeLeft -= 0.1;
+            const pct = Math.max(0, (timeLeft / 10) * 100);
+            timerFill.style.width = pct + '%';
+
+            if (timeLeft <= 0) {
+                clearInterval(gameTimer);
+                handleGameTimeout();
+            }
+        }, 100);
+    }
+
+    function handleGameTimeout() {
+        playSound('wrong');
+        gameLives--;
+        updateGameUI();
+
+        setTimeout(() => {
+            gameQIndex++;
+            nextQuestion();
+        }, 1200);
+    }
+
+    function checkGameAnswer(selectedVal, btn) {
+        if (gameTimer) clearInterval(gameTimer);
+
+        if (selectedVal === currentCorrectAns) {
+            playSound('correct');
+            btn.classList.add('!bg-emerald-500', '!border-emerald-600', '!text-white');
+            gameScore += 10;
+        } else {
+            playSound('wrong');
+            btn.classList.add('!bg-rose-500', '!border-rose-600', '!text-white');
+            gameLives--;
+        }
+
+        updateGameUI();
+
+        setTimeout(() => {
+            gameQIndex++;
+            nextQuestion();
+        }, 1200);
+    }
+
+    function restartGame() {
+        document.getElementById('gameover-modal').classList.add('hidden');
+        initGame();
+    }
+
+    // 數據對接上傳 API (Google Sheets)
+    function endGame() {
+        if (gameTimer) clearInterval(gameTimer);
+        if (totalTimerInterval) clearInterval(totalTimerInterval);
+
+        document.getElementById('modal-final-score').innerText = `${gameScore} 分`;
+        document.getElementById('gameover-modal').classList.remove('hidden');
+
+        const uploadStatus = document.getElementById('upload-status');
+        const currentStudent = sessionStorage.getItem('playerName') || "測試學生";
+        const currentClass = sessionStorage.getItem('playerClass') || "2A";
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler(() => {
+                    uploadStatus.innerText = "✅ 成績已成功寫入 Google 記錄表與加分系統！";
+                    uploadStatus.style.color = "#16a34a";
+                })
+                .withFailureHandler(() => {
+                    uploadStatus.innerText = "❌ 寫入失敗，請檢查網路。";
+                    uploadStatus.style.color = "#dc2626";
+                })
+                .saveScoreNative(currentStudent, currentClass, GAME_NAME, gameScore, secondsElapsed);
+        } else {
+            uploadStatus.innerText = `⚠️ 本地測試模式：成績 (${currentStudent} - ${gameScore}分) 已紀錄`;
+            uploadStatus.style.color = "#2563eb";
+        }
+    }
+</script>
+
+</body>
+</html>
